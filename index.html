@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>বৈজ্ঞানিক ও স্মার্ট বোর্ড ক্যালকুলেটর</title>
+    <!-- Tailwind CSS লোড করা হচ্ছে -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ইন্টার ফন্ট সেট করা হচ্ছে */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Sans+Bengali:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+            /* Darker background for premium feel */
+            background-color: #0F172A; /* Slate 900 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .calculator-container {
+            width: 100%;
+            max-width: 500px; 
+            background: #1E293B; /* Slate 800 */
+            border-radius: 2rem; /* More rounded */
+            /* Enhanced Premium shadow for depth */
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.5), 
+                0 10px 15px -3px rgba(0, 0, 0, 0.4), 
+                0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            border: 2px solid #334155;
+        }
+        /* Display styles */
+        #displayPrev, #displayMain {
+            color: #E2E8F0; /* Light text on dark background */
+        }
+        #displayMain {
+            color: #F8FAFC;
+            font-weight: 300;
+        }
+
+        .btn-base {
+            padding: 1.5rem 0; /* Increased padding */
+            border-radius: 1rem; /* More rounded buttons */
+            font-size: 1.4rem; 
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            font-weight: 600;
+            /* Inset shadow for tactile feel */
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.6), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+        }
+        .btn-base:active {
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.8);
+            transform: scale(0.98);
+        }
+
+        /* Number keys */
+        .btn-number {
+            background-color: #334155; /* Slate 700 */
+            color: #F8FAFC;
+        }
+        .btn-number:hover {
+            background-color: #475569; /* Slate 600 */
+        }
+        /* Operator keys (Red - Action) */
+        .btn-operator {
+            background-color: #DC2626; /* Red 600 */
+            color: #FFFFFF; 
+        }
+        .btn-operator:hover {
+            background-color: #EF4444; /* Red 500 */
+        }
+        /* Function keys (Gray/Dark - Utility) */
+        .btn-function {
+            background-color: #1E293B; /* Slate 800 - Match container */
+            color: #94A3B8; /* Slate 400 */
+            font-weight: 500;
+        }
+        .btn-function:hover {
+            background-color: #334155;
+            color: #CBD5E1;
+        }
+        /* Scientific keys (Indigo - Science/Math) */
+        .btn-scientific {
+            background-color: #4F46E5; /* Indigo 600 */
+            color: #FFFFFF;
+        }
+        .btn-scientific:hover {
+            background-color: #6366F1; /* Indigo 500 */
+        }
+        /* Equals Button (Highlight) */
+        #standardView .bg-indigo-600 {
+            background-color: #10B981; /* Emerald 500 */
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+        }
+        #standardView .bg-indigo-600:hover {
+            background-color: #34D399; /* Emerald 400 */
+        }
+
+        /* Tab styles */
+        .tab-btn {
+            background-color: #1E293B;
+            color: #94A3B8;
+            border-bottom: 3px solid transparent;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+        .tab-btn.active {
+            border-color: #6366F1; /* Indigo-500 */
+            color: #F8FAFC;
+        }
+        .tab-btn:hover:not(.active) {
+            color: #CBD5E1;
+        }
+
+        /* Sketchpad (Smart Board) styles */
+        #sketchCanvas {
+            border: 4px solid #4F46E5; /* Prominent Indigo border */
+            touch-action: none;
+            background-color: white; 
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.5); /* Glowing effect */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .btn-base {
+                font-size: 1.1rem;
+                padding: 1rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-container">
+    <!-- ট্যাব নেভিগেশন -->
+    <div class="flex border-b border-gray-700">
+        <button id="tabStandard" class="tab-btn active" onclick="switchTab('standard')">
+            বৈজ্ঞানিক ক্যালকুলেটর
+        </button>
+        <button id="tabSketchpad" class="tab-btn" onclick="switchTab('sketchpad')">
+            স্মার্ট বোর্ড (Sketchpad)
+        </button>
+    </div>
+
+    <!-- বৈজ্ঞানিক ক্যালকুলেটর ভিউ -->
+    <div id="standardView" class="p-4">
+        <!-- ডিসপ্লে -->
+        <div class="bg-gray-800 p-4 mb-4 rounded-xl shadow-inner border border-gray-700">
+            <div id="displayPrev" class="text-right text-lg text-gray-400 min-h-[1.5rem] whitespace-pre-wrap break-all"></div>
+            <div id="displayMain" class="text-right text-4xl font-light text-white min-h-[3rem] break-all">0</div>
+        </div>
+
+        <!-- বোতাম গ্রিড (৫ কলাম) -->
+        <div class="grid grid-cols-5 gap-3">
+            <!-- ফাংশন রো ১ (Scientific) -->
+            <button class="btn-base btn-function" onclick="clearDisplay()">AC</button>
+            <button class="btn-base btn-function" onclick="appendScientific('(')">(</button>
+            <button class="btn-base btn-function" onclick="appendScientific(')')">)</button>
+            <!-- FIX: ^ button changed to x² (squaring) and calls appendSquare() -->
+            <button class="btn-base btn-function" onclick="appendSquare()">x²</button>
+            <button class="btn-base btn-operator" onclick="deleteLast()">DEL</button>
+
+            <!-- ফাংশন রো ২ (Scientific) -->
+            <button class="btn-base btn-scientific" onclick="appendScientific('sin')">sin</button>
+            <button class="btn-base btn-scientific" onclick="appendScientific('cos')">cos</button>
+            <button class="btn-base btn-scientific" onclick="appendScientific('tan')">tan</button>
+            <!-- √ Symbol fixed -->
+            <button class="btn-base btn-scientific" onclick="appendScientific('sqrt')">√</button>
+            <button class="btn-base btn-operator" onclick="appendOperator('/')">/</button>
+            
+            <!-- রো ৩ -->
+            <button class="btn-base btn-number" onclick="appendNumber('7')">7</button>
+            <button class="btn-base btn-number" onclick="appendNumber('8')">8</button>
+            <button class="btn-base btn-number" onclick="appendNumber('9')">9</button>
+            <!-- π Symbol fixed -->
+            <button class="btn-base btn-scientific" onclick="appendScientific('Math.PI')">π</button>
+            <button class="btn-base btn-operator" onclick="appendOperator('*')">x</button>
+
+            <!-- রো ৪ -->
+            <button class="btn-base btn-number" onclick="appendNumber('4')">4</button>
+            <button class="btn-base btn-number" onclick="appendNumber('5')">5</button>
+            <button class="btn-base btn-number" onclick="appendNumber('6')">6</button>
+            <button class="btn-base btn-scientific" onclick="appendScientific('log')">log</button>
+            <button class="btn-base btn-operator" onclick="appendOperator('-')">-</button>
+
+            <!-- রো ৫ -->
+            <button class="btn-base btn-number" onclick="appendNumber('1')">1</button>
+            <button class="btn-base btn-number" onclick="appendNumber('2')">2</button>
+            <button class="btn-base btn-number" onclick="appendNumber('3')">3</button>
+            <button class="btn-base btn-scientific" onclick="appendScientific('Math.E')">e</button>
+            <button class="btn-base btn-operator" onclick="appendOperator('+')">+</button>
+
+            <!-- রো ৬ -->
+            <button class="btn-base btn-number col-span-2" onclick="appendNumber('0')">0</button>
+            <button class="btn-base btn-number" onclick="appendNumber('.')">.</button>
+            <button class="btn-base btn-scientific" onclick="appendScientific('ans')">Ans</button>
+            <button class="btn-base btn-scientific bg-indigo-600 text-white hover:bg-indigo-700" onclick="calculateResult()">=</button>
+        </div>
+        
+        <!-- LLM ফিচার রো: ধারণা ব্যাখ্যা -->
+        <div class="mt-4">
+            <button id="explainButton" class="w-full p-4 bg-fuchsia-600 text-white rounded-xl shadow-lg hover:bg-fuchsia-700 font-semibold transition duration-150 flex items-center justify-center space-x-2" onclick="explainConcept()">
+                <span>✨ এই ধারণাটি ব্যাখ্যা করুন (Explain Concept)</span>
+            </button>
+            <div id="explanationArea" class="mt-3 p-4 bg-gray-700 rounded-xl text-sm text-gray-200 hidden border border-fuchsia-500">
+                <p id="explanationText" class="whitespace-pre-wrap"></p>
+                <div id="explanationLoading" class="hidden text-center text-fuchsia-400 font-semibold mt-2">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-fuchsia-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    ধারণা বিশ্লেষণ ও ব্যাখ্যা তৈরি হচ্ছে...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- স্মার্ট বোর্ড ক্যালকুলেটর ভিউ -->
+    <div id="sketchpadView" class="p-4 hidden">
+        <p class="text-sm text-center text-indigo-400 mb-4 p-3 bg-gray-700 rounded-xl border border-indigo-500">
+            **স্মার্ট বোর্ড:** পেন বা আঙুল ব্যবহার করে বোর্ডে **পরিষ্কার করে** গাণিতিক সমীকরণ আঁকুন (যেমন: $2+2=$, $\frac{10}{5}$) এবং সমাধান করুন বাটনে চাপুন।
+        </p>
+
+        <!-- ড্রইং ক্যানভাস (Smart Board) -->
+        <canvas id="sketchCanvas" class="w-full bg-white rounded-xl shadow-2xl mb-4"></canvas>
+
+        <!-- বাটন -->
+        <div class="flex flex-col space-y-3">
+            <div class="flex space-x-3">
+                <button class="w-full p-3 btn-function font-semibold bg-gray-600 text-white hover:bg-gray-700 rounded-xl shadow-lg" onclick="clearSketchCanvas()">
+                    স্কেচ মুছুন
+                </button>
+                <button id="solveButton" class="w-full p-3 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 font-semibold transition duration-150" onclick="solveSketchpad()">
+                    সমাধান করুন (Solve)
+                </button>
+            </div>
+
+            <!-- ফলাফল ডিসপ্লে -->
+            <div id="sketchResult" class="text-2xl font-bold text-center p-3 bg-gray-800 text-white rounded-xl mt-3 flex items-center justify-center min-h-[4rem] border-t-2 border-indigo-400">
+                ফলাফল: ০
+            </div>
+            <!-- লোডিং ইন্ডিকেটর -->
+            <div id="loadingIndicator" class="hidden text-center text-indigo-400 font-semibold mt-2">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                গণনা চলছে...
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // =======================================================
+    // ক্যালকুলেটর লজিক (Scientific Calculator Logic)
+    // =======================================================
+    let currentExpression = '0';
+    let previousExpression = '';
+    let waitingForSecondOperand = false;
+    let lastResult = 0; // Ans function support
+
+    const displayMain = document.getElementById('displayMain');
+    const displayPrev = document.getElementById('displayPrev');
+
+    // ডিসপ্লে আপডেট ফাংশন
+    function updateDisplay() {
+        if (currentExpression.length > 25) {
+            displayMain.classList.remove('text-4xl', 'text-2xl');
+            displayMain.classList.add('text-lg');
+        } else if (currentExpression.length > 15) {
+            displayMain.classList.remove('text-4xl', 'text-lg');
+            displayMain.classList.add('text-2xl');
+        } else {
+            displayMain.classList.remove('text-2xl', 'text-lg');
+            displayMain.classList.add('text-4xl');
+        }
+
+        displayMain.textContent = currentExpression;
+        displayPrev.textContent = previousExpression;
+    }
+
+    // সংখ্যা যোগ করা
+    function appendNumber(number) {
+        if (currentExpression === '0' || waitingForSecondOperand || currentExpression === 'ত্রুটি') {
+            currentExpression = number === '.' ? '0.' : number;
+            waitingForSecondOperand = false;
+        } else {
+            if (number === '.' && currentExpression.includes('.')) return;
+            currentExpression += number;
+        }
+        updateDisplay();
+    }
+
+    // অপারেটর যোগ করা (+, -, *, /)
+    function appendOperator(operator) {
+        if (currentExpression === 'ত্রুটি') return;
+
+        if (waitingForSecondOperand) {
+            if (previousExpression) {
+                // Replace the last operator if consecutive operator is pressed
+                previousExpression = previousExpression.slice(0, -1) + operator;
+            }
+        } else {
+            previousExpression += currentExpression + operator;
+            waitingForSecondOperand = true;
+            currentExpression = '0'; // Reset current to 0, not empty
+        }
+        updateDisplay();
+    }
+    
+    // সংখ্যাকে বর্গ করা (Squaring a number - FIX for user request)
+    function appendSquare() {
+        if (currentExpression === 'ত্রুটি' || currentExpression === '0' || waitingForSecondOperand) {
+            // Error state, 0, or waiting for a new number
+            return;
+        }
+        
+        try {
+            // Check if the current expression is a single number or a valid expression to square.
+            if (/[+\-*/.()]$/.test(currentExpression) || /(sin|cos|tan|log|sqrt|E|PI)$/.test(currentExpression)) {
+                 // If it ends in something non-numeric (operator, bracket, function), do nothing
+                 // This prevents complex errors and forces user to use parentheses for clarity
+                 return;
+            }
+
+            // Wrap the expression in parentheses and append **2 to calculate the square immediately.
+            // e.g., "5+3" becomes (5+3)**2 -> 64
+            let expressionToEvaluate = currentExpression;
+            let result = eval(`(${expressionToEvaluate})**2`);
+
+            if (isNaN(result) || !isFinite(result)) {
+                currentExpression = 'ত্রুটি';
+            } else {
+                previousExpression = `(${expressionToEvaluate})² =`;
+                // Round to avoid excessive float precision issues
+                result = parseFloat(result.toFixed(10));
+                currentExpression = result.toString();
+                lastResult = result; // Store result for 'Ans'
+            }
+        } catch (e) {
+            console.error("Squaring Error:", e);
+            currentExpression = 'ত্রুটি';
+        }
+        waitingForSecondOperand = true;
+        updateDisplay();
+    }
+
+
+    // বৈজ্ঞানিক ফাংশন যোগ করা
+    function appendScientific(func) {
+        if (currentExpression === 'ত্রুটি') {
+            currentExpression = '0'; // Clear error on new input
+        }
+        waitingForSecondOperand = false;
+        
+        if (func === 'ans') {
+            const ansValue = lastResult.toString();
+            if (currentExpression === '0') {
+                 currentExpression = ansValue;
+            } else {
+                currentExpression += ansValue;
+            }
+        } else if (func === 'Math.PI' || func === 'Math.E') {
+            // Check if last character is a digit or parenthesis, if so, implicitly multiply
+            const lastChar = currentExpression.slice(-1);
+            if (/\d|\)/.test(lastChar)) {
+                 currentExpression += '*' + func;
+            } else {
+                 currentExpression += func;
+            }
+        } else if (func === '(' || func === ')') {
+            currentExpression += func;
+        } else if (func === 'log' || func === 'sin' || func === 'cos' || func === 'tan' || func === 'sqrt') {
+            // Add functions like sin, cos, log, sqrt
+            if (currentExpression === '0') {
+                currentExpression = func + '(';
+            } else {
+                currentExpression += func + '(';
+            }
+        }
+        // Note: The generic '^' (power) logic has been removed as it is now a dedicated 'x²' button.
+        updateDisplay();
+    }
+
+    // ফলাফল হিসাব করা
+    function calculateResult() {
+        if (currentExpression === 'ত্রুটি') return;
+        
+        // Build the full expression
+        let fullExpression = previousExpression + (currentExpression === '0' && previousExpression !== '' ? '' : currentExpression);
+        
+        // Check for empty expression after cleanup
+        if (fullExpression.trim() === '') return;
+
+        // --- Clean up trailing incomplete operators/functions to prevent 'Unexpected end of input' error ---
+        let cleanedExpression = fullExpression;
+
+        // A function to check if a character or sequence is a trailing syntax error
+        function isTrailingError(expr) {
+            // Check for trailing single operators (+, -, *, /) or dot (.) or opening bracket (()
+            const endsWithOperatorOrDotOrBracket = /[\+\-\*\/.\(]$/.test(expr);
+            // Check for trailing incomplete function names
+            const endsWithFunction = /(sin|cos|tan|log|sqrt)$/.test(expr);
+            
+            return endsWithOperatorOrDotOrBracket || endsWithFunction;
+        }
+
+        // Loop to repeatedly remove trailing tokens that cause syntax errors
+        while (cleanedExpression.length > 0 && isTrailingError(cleanedExpression)) {
+            if (cleanedExpression.endsWith('sqrt')) {
+                cleanedExpression = cleanedExpression.slice(0, -4);
+            } else if (cleanedExpression.endsWith('sin') || cleanedExpression.endsWith('cos') || 
+                       cleanedExpression.endsWith('tan') || cleanedExpression.endsWith('log')) {
+                // Remove 3-character functions
+                cleanedExpression = cleanedExpression.slice(0, -3);
+            }
+            else {
+                // Remove single trailing character: operator, dot, or opening bracket
+                cleanedExpression = cleanedExpression.slice(0, -1);
+            }
+            
+            // If the expression was cleaned down to empty, reset and return.
+            if (cleanedExpression.trim() === '') {
+                currentExpression = '0';
+                previousExpression = '';
+                waitingForSecondOperand = false;
+                updateDisplay();
+                return;
+            }
+        }
+        // --- Cleanup End ---
+
+
+        // 1. Prepare expression for Math functions and constants
+        // Use the cleaned expression for function replacement
+        let calculationExpression = cleanedExpression
+            // Replace function names with Math. prefix (Math.log is Natural Log (ln))
+            .replace(/sin\(/g, 'Math.sin(')
+            .replace(/cos\(/g, 'Math.cos(')
+            .replace(/tan\(/g, 'Math.tan(')
+            .replace(/sqrt\(/g, 'Math.sqrt(')
+            .replace(/log\(/g, 'Math.log(') 
+            // Replace variables/constants
+            .replace(/Ans/g, lastResult)
+            .replace(/Math\.PI/g, Math.PI)
+            .replace(/Math\.E/g, Math.E);
+        
+        // 2. Evaluate
+        try {
+            // Use eval, which supports the '**' exponentiation operator directly
+            let result = eval(calculationExpression);
+
+            if (isNaN(result) || !isFinite(result)) {
+                currentExpression = 'ত্রুটি';
+            } else {
+                previousExpression = fullExpression + '=';
+                // Round to avoid excessive float precision issues
+                result = parseFloat(result.toFixed(10)); 
+                currentExpression = result.toString();
+                lastResult = result; // Store result for 'Ans'
+            }
+
+        } catch (error) {
+            console.error("Calculation Error:", error);
+            currentExpression = 'ত্রুটি';
+        }
+        waitingForSecondOperand = true;
+        updateDisplay();
+    }
+
+    // সব মুছে ফেলা (All Clear)
+    function clearDisplay() {
+        currentExpression = '0';
+        previousExpression = '';
+        waitingForSecondOperand = false;
+        updateDisplay();
+        // Clear explanation area too
+        explanationArea.classList.add('hidden');
+        explanationText.textContent = '';
+    }
+
+    // শেষ ইনপুট মুছে ফেলা (Delete Last)
+    function deleteLast() {
+        if (currentExpression === 'ত্রুটি' || waitingForSecondOperand) {
+            clearDisplay();
+            return;
+        }
+        currentExpression = currentExpression.slice(0, -1);
+        if (currentExpression === '') {
+            currentExpression = '0';
+        }
+        updateDisplay();
+    }
+    
+    // ইনিশিয়াল ডিসপ্লে
+    updateDisplay();
+
+
+    // =======================================================
+    // LLM ফিচার: ধারণা ব্যাখ্যা লজিক (Concept Explainer Logic)
+    // =======================================================
+    const explanationArea = document.getElementById('explanationArea');
+    const explanationText = document.getElementById('explanationText');
+    const explanationLoading = document.getElementById('explanationLoading');
+    const explainButton = document.getElementById('explainButton');
+
+    // API Helpers
+    const apiKey = "AIzaSyC2iOn31WOnffDTBLBrrLAwwhaE6RoWwbM";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+    
+    function formatBanglaMath(text) {
+        // Replaces markdown formatting with HTML for better display and maintains line breaks
+        let html = text.replace(/`([^`]+)`/g, '<code class="bg-gray-600 text-yellow-300 px-1 rounded">$1</code>');
+        html = html.split('\n').map(p => {
+            p = p.trim();
+            if (p.startsWith('**') && p.endsWith('**')) {
+                return `<p class="font-bold mt-3 mb-1">${p.slice(2, -2)}</p>`; // Bold headings
+            } else if (p.startsWith('* ') || p.startsWith('- ')) {
+                return `<li class="ml-4 list-disc">${p.substring(2)}</li>`; // List items
+            }
+            return `<p class="mb-2">${p}</p>`; // Standard paragraph
+        }).join('');
+        return html;
+    }
+
+    async function explainConcept() {
+        // Use the combined expression for explanation
+        let fullExpression = previousExpression.replace(/=$/, '') + (currentExpression === '' || currentExpression === '0' ? '' : currentExpression);
+        
+        if (fullExpression.trim() === '' || fullExpression.trim() === '0') {
+            explanationText.innerHTML = 'দয়া করে একটি গাণিতিক ধারণা বা সমীকরণ লিখুন (যেমন: <code>sin(90)</code> বা <code>2x+5=15</code>)।';
+            explanationArea.classList.remove('hidden');
+            return;
+        }
+
+        explanationArea.classList.remove('hidden');
+        explanationText.textContent = '';
+        explanationLoading.classList.remove('hidden');
+        explainButton.disabled = true;
+
+        const systemPrompt = "You are an excellent mathematical tutor. Explain the given mathematical expression, concept, or equation in simple, clear Bangla. If it is an equation, provide the step-by-step solution. If it's a concept (like sin(x) or log), explain what it is and how it works. Use appropriate LaTeX syntax for formatting the math. Keep the explanation concise and highly educational.";
+        const userQuery = `দয়া করে নিম্নলিখিত গাণিতিক ধারণা বা সমীকরণটি ব্যাখ্যা করুন এবং সমাধান দিন: ${fullExpression}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            generationConfig: { temperature: 0.2 }
+        };
+
+        const maxRetries = 3;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                explanationLoading.classList.add('hidden');
+                explainButton.disabled = false;
+                
+                if (text) {
+                    explanationText.innerHTML = formatBanglaMath(text);
+                } else {
+                    explanationText.textContent = 'দুঃখিত, ব্যাখ্যার জন্য কোনো উত্তর পাওয়া যায়নি।';
+                }
+                return;
+
+            } catch (error) {
+                console.error(`Attempt ${attempt + 1} failed:`, error);
+                if (attempt < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                } else {
+                    explanationLoading.classList.add('hidden');
+                    explainButton.disabled = false;
+                    explanationText.textContent = 'সংযোগের ত্রুটি বা সার্ভার থেকে সাড়া পাওয়া যায়নি।';
+                }
+            }
+        }
+    }
+
+
+    // =======================================================
+    // স্কেচপ্যাড লজিক (Smart Board Logic)
+    // =======================================================
+
+    const canvas = document.getElementById('sketchCanvas');
+    const ctx = canvas.getContext('2d');
+    const sketchResult = document.getElementById('sketchResult');
+    const solveButton = document.getElementById('solveButton');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    const CANVAS_HEIGHT = 300; // Increased height for better drawing
+
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = CANVAS_HEIGHT; 
+        // ক্যানভাস সাদা ব্যাকগ্রাউন্ড দিয়ে পূরণ করা
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    window.onload = resizeCanvas;
+    window.onresize = resizeCanvas;
+
+    function startDrawing(e) {
+        isDrawing = true;
+        [lastX, lastY] = getCanvasCoordinates(e);
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+        ctx.beginPath();
+    }
+
+    function getCanvasCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        return [clientX - rect.left, clientY - rect.top];
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+
+        ctx.strokeStyle = '#1E293B'; // Dark color for writing
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 6; // Thicker line for better visibility
+
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        const [newX, newY] = getCanvasCoordinates(e);
+        ctx.lineTo(newX, newY);
+        ctx.stroke();
+
+        [lastX, lastY] = [newX, newY];
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch event listeners for mobile/tablet smart board experience
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) { // Only handle single touch for drawing
+            e.preventDefault();
+            startDrawing(e);
+        }
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            draw(e);
+        }
+    });
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+
+
+    function clearSketchCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        sketchResult.textContent = 'ফলাফল: ০';
+        sketchResult.classList.remove('bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+        sketchResult.classList.add('bg-gray-800', 'text-white');
+    }
+
+    function parseBase64Data(dataUrl) {
+        const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
+        if (match) {
+            return {
+                mimeType: match[1],
+                data: match[2]
+            };
+        }
+        return null;
+    }
+
+    async function solveSketchpad() {
+        // Reset result display to processing state
+        sketchResult.classList.remove('bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+        sketchResult.classList.add('bg-gray-800', 'text-white');
+        sketchResult.textContent = 'ফলাফল: গণনা করা হচ্ছে...';
+        loadingIndicator.classList.remove('hidden');
+        solveButton.disabled = true;
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const imagePart = parseBase64Data(dataUrl);
+
+        if (!imagePart) {
+            sketchResult.textContent = 'ফলাফল: চিত্র ডেটা তৈরি করা যায়নি।';
+            loadingIndicator.classList.add('hidden');
+            solveButton.disabled = false;
+            return;
+        }
+
+        const userPrompt = "Interpret the handwritten math equation in this image. Calculate the final result and return ONLY the numerical answer, rounded to 2 decimal places if necessary. If you cannot clearly identify a single solvable mathematical expression, return the word 'UNSOLVABLE'. Do not include any text, explanation, or calculation steps. JUST the number or 'UNSOLVABLE'. Example: For '2+2', return '4'. For '10/3', return '3.33'. For 'x+y', return 'UNSOLVABLE'.";
+
+        const payload = {
+            contents: [{
+                role: "user",
+                parts: [
+                    { text: userPrompt },
+                    {
+                        inlineData: {
+                            mimeType: imagePart.mimeType,
+                            data: imagePart.data
+                        }
+                    }
+                ]
+            }],
+            generationConfig: {
+                temperature: 0.1 
+            }
+        };
+
+        const maxRetries = 3;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+                if (!text) {
+                    throw new Error("API response was empty or malformed.");
+                }
+
+                loadingIndicator.classList.add('hidden');
+                solveButton.disabled = false;
+                
+                if (text.toUpperCase() === 'UNSOLVABLE') {
+                    sketchResult.textContent = 'ফলাফল: সমীকরণ বোঝা যায়নি। আবার চেষ্টা করুন।';
+                    sketchResult.classList.add('bg-yellow-100', 'text-yellow-800');
+                    sketchResult.classList.remove('bg-gray-800', 'text-white');
+                } else if (!isNaN(Number(text))) {
+                    sketchResult.textContent = `ফলাফল: ${Number(text).toLocaleString('bn-BD', { maximumFractionDigits: 2 })}`;
+                    sketchResult.classList.add('bg-green-100', 'text-green-800');
+                    sketchResult.classList.remove('bg-gray-800', 'text-white');
+                } else {
+                    sketchResult.textContent = 'ফলাফল: ত্রুটি (অবৈধ উত্তর)';
+                    sketchResult.classList.add('bg-red-100', 'text-red-800');
+                    sketchResult.classList.remove('bg-gray-800', 'text-white');
+                }
+                return;
+
+            } catch (error) {
+                console.error(`Attempt ${attempt + 1} failed:`, error);
+                if (attempt < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                } else {
+                    loadingIndicator.classList.add('hidden');
+                    solveButton.disabled = false;
+                    sketchResult.textContent = 'ফলাফল: সংযোগ/API ত্রুটি।';
+                    sketchResult.classList.add('bg-red-100', 'text-red-800');
+                    sketchResult.classList.remove('bg-gray-800', 'text-white');
+                }
+            }
+        }
+    }
+
+
+    // =======================================================
+    // ট্যাব ম্যানেজমেন্ট লজিক (Tab Management Logic)
+    // =======================================================
+    function switchTab(tabName) {
+        const standardView = document.getElementById('standardView');
+        const sketchpadView = document.getElementById('sketchpadView');
+        const tabStandard = document.getElementById('tabStandard');
+        const tabSketchpad = document.getElementById('tabSketchpad');
+
+        if (tabName === 'standard') {
+            standardView.classList.remove('hidden');
+            sketchpadView.classList.add('hidden');
+            tabStandard.classList.add('active');
+            tabSketchpad.classList.remove('active');
+        } else if (tabName === 'sketchpad') {
+            standardView.classList.add('hidden');
+            sketchpadView.classList.remove('hidden');
+            tabStandard.classList.remove('active');
+            tabSketchpad.classList.add('active');
+            resizeCanvas();
+        }
+    }
+</script>
+
+</body>
+</html>
